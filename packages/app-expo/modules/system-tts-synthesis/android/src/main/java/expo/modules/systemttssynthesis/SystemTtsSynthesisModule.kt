@@ -8,17 +8,34 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.records.Field
+import expo.modules.kotlin.records.Record
 import java.io.File
 import java.util.Locale
 import java.util.UUID
 
 class SystemTtsSynthesisModule : Module() {
-  private data class SynthesisOptions(
-    val rate: Double? = null,
-    val pitch: Double? = null,
-    val language: String? = null,
-    val voice: String? = null,
-  )
+  // Has to be a `Record`: expo-modules-core registers a converter only for object
+  // arguments implementing that interface (`TypeConverterProviderImpl`), and its
+  // consumer ProGuard rules keep those implementations
+  // (`-keep class * implements expo.modules.kotlin.records.Record { *; }`).
+  // A plain data class is obfuscated away in release builds, so the lazily built
+  // `typeOf<SynthesisOptions>()` fails with "Unresolved class: ..." as soon as JS
+  // touches `synthesizeToFile`, which killed system TTS on Android.
+  // Mirrors the iOS `SynthesisOptions`.
+  private class SynthesisOptions : Record {
+    @Field
+    var rate: Double? = null
+
+    @Field
+    var pitch: Double? = null
+
+    @Field
+    var language: String? = null
+
+    @Field
+    var voice: String? = null
+  }
 
   private data class PendingRequest(
     val text: String,
